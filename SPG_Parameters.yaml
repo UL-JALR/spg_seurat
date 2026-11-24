@@ -1,0 +1,139 @@
+---
+# --- Experimental individual criteria ---
+filter:
+
+  individual1:
+    MINnFeature_RNA: 200
+    MAXnFeature_RNA: 6000
+    MAXpercent.mito: 100
+
+  individual2:
+    MINnFeature_RNA: 200
+    MAXnFeature_RNA: 6000
+    MAXpercent.mito: 5
+
+  individual3:
+    MINnFeature_RNA: 200
+    MAXnFeature_RNA: 4000
+    MAXpercent.mito: 12
+
+  individual4:
+    MINnFeature_RNA: 200
+    MAXnFeature_RNA: 3000
+    MAXpercent.mito: 10
+
+  embryo1:
+    MINnFeature_RNA: 200
+    MAXnFeature_RNA: 10000
+    MAXpercent.mito: 20
+
+  embryo2:
+    MINnFeature_RNA: 200
+    MAXnFeature_RNA: 10000
+    MAXpercent.mito: 20
+
+  embryo3:
+    MINnFeature_RNA: 200
+    MAXnFeature_RNA: 10000
+    MAXpercent.mito: 5
+
+  embryo4:
+    MINnFeature_RNA: 200
+    MAXnFeature_RNA: 10000
+    MAXpercent.mito: 7.5
+
+
+# --- Print gene log2FC + FDR gene lists? (TRUE for yes) ---
+printer:
+
+  list: TRUE
+
+# --- File sourced from ENSEMBL containg GO terms for topGO package cluster annotation ---
+topGO_annotation: "scripts/topGO_annotation_file.txt" 
+
+# --- File sourced from Michael Richardson at the IBL, spatial patterning gene list ---
+SPGlist: "scripts/SPG_genelist.xlsx"
+
+# --- Cluster annotation ---
+
+adult_annotation:
+  clus0:
+    name: "Basal keratinocytes"
+  clus1:
+    name: "Skeletal muscle (structural)"
+  clus2:
+    name: "Fibroblasts"
+  clus3:
+    name: "Differentiated keratinocytes"
+  clus4:
+    name: "Endothelial cells"
+  clus5:
+    name: "Uropygial gland epithelium"
+  clus6:
+    name: "Vascular smooth muscle"
+  clus7:
+    name: "Lipogenic gland cells"
+  clus8:
+    name: "Macrophages / APCs"
+  clus9:
+    name: "Pericytes"
+  clus10:
+    name: "Erythrocytes"
+  clus11:
+    name: "Skeletal muscle (fast)"
+  clus12:
+    name: "Skeletal muscle (slow)"
+  clus13:
+    name: "T / NK cells"
+  clus14:
+    name: "Keratinized epithelial cells"
+  clus15:
+    name: "Skeletal muscle (fast)"
+  clus16:
+    name: "Adipocytes"
+  clus17:
+    name: "Muscle satellite cells"
+  clus18:
+    name: "Basal epithelial progenitors"
+  clus19:
+    name: "Skeletal muscle (fast)"
+  clus20:
+    name: "Differentiated keratinocytes"
+  clus21:
+    name: "Thrombocytes"
+
+
+embryo_annotation:
+  clus0:
+    name: "Limb mesenchyme"
+  clus1:
+    name: "Distal limb mesenchyme"
+  clus2:
+    name: "Chondrogenic mesenchyme"
+  clus3:
+    name: "Proliferating cells"
+  clus4:
+    name: "Basal epidermal cells"
+  clus5:
+    name: "Myogenic progenitors"
+  clus6:
+    name: "Mesenchymal fibroblasts"
+  clus7:
+    name: "Endothelial cells"
+  clus8:
+    name: "Differentiating neurons"
+  clus9:
+    name: "Neural progenitors"
+  clus10:
+    name: "Peripheral neurons"
+  clus11:
+    name: "Erythrocytes"
+  clus12:
+    name: "Differentiated epithelium"
+  clus13:
+    name: "Developing skeletal muscle"
+  clus14:
+    name: "Motor neurons"
+  clus15:
+    name: "Macrophages / myeloid cells"
+
