@@ -763,6 +763,20 @@ plotfunc = function(devstage) {
   #Saving heatmaps
   ggsave(file.path(plottingDir, paste0(prefix, "byTissue_Heatmap.pdf")), tisHeat, width = 8, height = 4)
   ggsave(file.path(plottingDir, paste0(prefix, "byGene_Heatmap.pdf")), geneHeat, width = 8, height = 4)
+  ###########
+
+
+
+  ########### POSTERIORITY SCORING
+  message("====== Creating posteriority scoring for ", devstage, " ======")
+  
+  #Calculate posteriority score for each tissue
+
+
+
+  ###########
+
+
   
 }
 
