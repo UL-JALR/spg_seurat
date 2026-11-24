@@ -2,3 +2,7 @@
 # macOS metadata
 ._*
 .DS_Store
+
+# Annotation and gene list files
+topGO_annotation_file.txt
+SPG_genelist.xlsx
