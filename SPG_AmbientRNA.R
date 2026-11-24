@@ -45,7 +45,13 @@ fildir = args[2]
 
 filList = list.files(fildir)  #Create a list containing all tissue directories
 
+###Create output directory
+outDir = file.path(getwd(), "output")
+if (!dir.exists(outDir)) {
+  dir.create(outDir, recursive = TRUE)
+}
 
+###Correction
 message("====== Reading in filtered feature bc matrices ======")
 sampListALL = list()
 for(i in filList) {
@@ -104,7 +110,7 @@ if (!dir.exists(fixDir)) {
   dir.create(fixDir, recursive = TRUE)
 }
 
-contaminatedDir = file.path(getwd(), "ContaminationFracSamples")
+contaminatedDir = file.path(outDir, "ContaminationFracSamples")
 if (!dir.exists(contaminatedDir)) {
   dir.create(contaminatedDir, recursive = TRUE)
 }
