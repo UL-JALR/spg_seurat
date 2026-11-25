@@ -79,7 +79,7 @@ safeHeat = function(x) {
 }
 
 ###Defining full devstage specific plotting function to be applied to both embryo and adult data
-#plotfunc = function(devstage) {
+plotfunc = function(devstage) {
   
   #Define prefix
   prefix = paste0(devstage, "_")
@@ -768,7 +768,7 @@ safeHeat = function(x) {
 
 
   ########### POSTERIORITY SCORING
-  message("====== Creating posteriority scoring for ", devstage, " ======")
+  message("====== Creating posteriority scoring and collinearity testing for ", devstage, " ======")
   
   ##Set comparisons
   if(devstage == "adult") {
@@ -903,11 +903,55 @@ safeHeat = function(x) {
       space = "free_x"
     ) +
     scale_fill_gradient2(
-      low = 
-    )
+      low = "#001158",
+      mid = "white",
+      high = "#AD002A",
+      midpoint = 0
+    ) +
+    labs(
+      x = NULL,
+      y = NULL,
+      fill = "log2FC",
+      title = paste0("Positional HOX expression in ", devstage, " tissue")
+    ) + 
+    theme_classic() +
+    RotatedAxis()
   
-  ggsave(file.path(plottingDir, paste0(prefix, "within_devstage_postdelta.pdf")), monodeltaplot, width = 6, height = 6)
+  ggsave(file.path(plottingDir, paste0(prefix, "log2fc_hox_heatmap.pdf")), l2fcheat, width = 5, height = 6)
   
+  
+  
+  #HOX collinearity test
+  hoxFC$paralog = as.numeric(sub("^HOX[A-D]", "", as.character(hoxFC$gene)))
+  hoxFC$cluster = substr(hoxFC$gene, 4, 4)
+  hoxFCexpressed = hoxFC %>% filter(CPM.ant > 0 | CPM.post > 0)
+  
+  coltest = ggplot(hoxFCexpressed, aes(x = paralog, y = log2FC)) +
+    geom_hline(
+      yintercept = 0,
+      linetype = "dashed",
+      color = "grey30") +
+    geom_point(
+      aes(colour = cluster), 
+      size = 3) +
+    geom_smooth(
+      method = "lm",
+      formula = y ~ x,
+      se = FALSE,
+      colour = "black") +
+    facet_wrap(
+      ~comparison + contrast, 
+      ncol = length(unique(hoxFCexpressed$sample.ant)) / 2) +
+    scale_x_continuous(
+      breaks = 1:13) +
+    labs(
+      x = "HOX paralog",
+      y = "Posterior / anterior log2FC",
+      color = "HOX cluster"
+    ) +
+    theme_classic()
+    
+  ggsave(file.path(plottingDir, paste0(prefix, "collinearity.pdf")), coltest, width = 10, height = 8)
 
 
 
@@ -916,30 +960,30 @@ safeHeat = function(x) {
 
 
   
-#}
+}
 
 
 
 #!#!#!#!#!#!#!#!#!#!#
 #TEMPORARY CODE TO RUN LOCALLY
-prefix = paste0("embryo", "_")
-seurat = file.path(outdir, "SeuratOBJs", paste0(prefix, "UM.rds"))
-markers = file.path(outdir, "SeuratOBJs", paste0(prefix, "markers.rds"))
-devstage = "embryo"
+#prefix = paste0("adult", "_")
+#seurat = file.path(outdir, "SeuratOBJs", paste0(prefix, "UM.rds"))
+#markers = file.path(outdir, "SeuratOBJs", paste0(prefix, "markers.rds"))
+#devstage = "adult"
 #!#!#!#!#!#!#!#!#!#!#
 
 ###Run function for both the embryo and adult data
-# for(i in c("embryo", "adult")) {
-#   
-#   prefix = paste0(i, "_")
-#   seurat = file.path(outdir, "SeuratOBJs", paste0(prefix, "UM.rds"))
-#   markers = file.path(outdir, "SeuratOBJs", paste0(prefix, "markers.rds"))
-#   
-#   if(file.exists(seurat) && file.exists(markers)) {
-#     plotfunc(i)
-#   }
-#   
-# }
+for(i in c("embryo", "adult")) {
+
+  prefix = paste0(i, "_")
+  seurat = file.path(outdir, "SeuratOBJs", paste0(prefix, "UM.rds"))
+  markers = file.path(outdir, "SeuratOBJs", paste0(prefix, "markers.rds"))
+
+  if(file.exists(seurat) && file.exists(markers)) {
+    plotfunc(i)
+  }
+
+}
 
 
 
