@@ -35,7 +35,7 @@ set.seed(777)
 
 
 ###Setting script settings -- Turn on if not on MacOS device
-#plan("multicore", workers = 12)
+plan("multicore", workers = 12)
 
 
 ###Specify usage
@@ -44,10 +44,10 @@ message("WARNING: Note that the number of annotated clusters in SPG_Parameters.y
 #Sys.sleep(15) #Pause to allow user to read warning if running live
 
 ###Deal arguments
-#args = commandArgs(T)
+args = commandArgs(T)
 
-outdir = "../output" #args[1]
-parameters = "SPG_Parameters.yaml" #args[2]
+outdir = args[1] #"../output" #
+parameters = args[2] #"SPG_Parameters.yaml" #
 
 ###Loading parameters
 handlers = list("bool#no" = function(x){if ( x %in% c("false", "FALSE") ) FALSE else x}, "bool#yes" = function(x){if ( x %in% c("true", "TRUE") ) TRUE else x})
