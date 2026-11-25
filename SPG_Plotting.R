@@ -857,6 +857,7 @@ safeHeat = function(x) {
   
   ##Log2fc comparison
   pbulkcpm = sweep(pbulk, MARGIN = 2, STATS = colSums(pbulk), FUN = "/") * 1e6 #Normalize to cpm
+  saveRDS(pbulkcpm, file = file.path(outdir, "SeuratOBJs", paste0(prefix, "sample_aggregated_cpm.rds"))) #Future comparisons
   geneFC = list()
   
   for(i in seq_len(nrow(samplepairs))) {
@@ -878,12 +879,36 @@ safeHeat = function(x) {
   }
   geneFC = bind_rows(geneFC)
   geneFC$devstage = devstage
+  saveRDS(geneFC, file = file.path(outdir, "SeuratOBJs", paste0(prefix, "geneFC.rds"))) #Save for future  interdevstage comparisons
   
   #Specify genes of interest
   spgFC = geneFC %>% filter(gene %in% spgs)
   hoxFC = geneFC %>% filter(gene %in% HOXgenes)
+  spgnohoxFC = spgFC %>% filter(!gene %in% HOXgenes)
   
-  #hoxcpm = pbulkcpm[HOXgenes, , drop = FALSE]
+  
+  #Log2FC heatmap for HOX genes
+  hoxFC$gene = factor(hoxFC$gene, levels = rev(HOXgenes))
+  hoxFC$contrast = paste(hoxFC$sample.ant, hoxFC$sample.post, sep = " → ")
+  hoxFC = hoxFC %>%
+    left_join(
+      deltapost %>% dplyr::select(sample.ant, sample.post), by = c("sample.ant", "sample.post"))
+  
+  l2fcheat = ggplot(hoxFC, aes(x = contrast, y = gene, fill = log2FC)) +
+    geom_tile(
+      colour = "white", linewidth = 0.2) +
+    facet_grid(
+      . ~ comparison,
+      scales = "free_x",
+      space = "free_x"
+    ) +
+    scale_fill_gradient2(
+      low = 
+    )
+  
+  ggsave(file.path(plottingDir, paste0(prefix, "within_devstage_postdelta.pdf")), monodeltaplot, width = 6, height = 6)
+  
+
 
 
 
