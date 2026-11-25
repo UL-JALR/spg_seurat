@@ -35,7 +35,7 @@ set.seed(777)
 
 
 ###Setting script settings -- Turn on if not on MacOS device
-plan("multicore", workers = 12)
+#plan("multicore", workers = 12)
 
 
 ###Specify usage
@@ -44,10 +44,10 @@ message("WARNING: Note that the number of annotated clusters in SPG_Parameters.y
 #Sys.sleep(15) #Pause to allow user to read warning if running live
 
 ###Deal arguments
-args = commandArgs(T)
+#args = commandArgs(T)
 
-outdir = args[1]
-parameters = args[2]
+outdir = "../output" #args[1]
+parameters = "SPG_Parameters.yaml" #args[2]
 
 ###Loading parameters
 handlers = list("bool#no" = function(x){if ( x %in% c("false", "FALSE") ) FALSE else x}, "bool#yes" = function(x){if ( x %in% c("true", "TRUE") ) TRUE else x})
@@ -64,7 +64,7 @@ if (!dir.exists(hoxDir)) {
 
 ###Load list of spatial patterning genes
 spgfile = read.xlsx(parms$SPGlist, sheet = "SPG_Master")
-spgs = spgfile$Catalogue_gene_symbol
+spgs = toupper(spgfile$Catalogue_gene_symbol) #Not all genes are capitalized but chicken genes are, so need to specify toupper
 
 ###Defining a function for heatmap scaling
 safeHeat = function(x) {
@@ -78,8 +78,8 @@ safeHeat = function(x) {
   (x - minimum) / (maximum - minimum)
 }
 
-###Defining full plotting function to be applied to both embryo and adult data
-plotfunc = function(devstage) {
+###Defining full devstage specific plotting function to be applied to both embryo and adult data
+#plotfunc = function(devstage) {
   
   #Define prefix
   prefix = paste0(devstage, "_")
@@ -770,7 +770,120 @@ plotfunc = function(devstage) {
   ########### POSTERIORITY SCORING
   message("====== Creating posteriority scoring for ", devstage, " ======")
   
-  #Calculate posteriority score for each tissue
+  ##Set comparisons
+  if(devstage == "adult") {
+    comparison = list(
+      Limb = c("Bicep", "Thigh"),
+      Skin = c("Neck", "LowBack"))
+  } else if(devstage == "embryo") {
+    comparison = list(
+      Limb = c("EmbFore", "EmbHind"),
+      Skin = c("EmbUpper", "EmbLower"))
+  }
+  
+  ##Calculate posteriority score for each tissue (WHOLE TISSUE LEVEL COMPARISON)
+  
+  #This weighted stuff is only relevant for HOX 
+  #Weighted HOX gene posteriority scores to assess whether HOX genes towards 5' are more present in a tissue
+  pbulk = AggregateExpression(object = UM, assays = "RNA", group.by = "sample", return.seurat = FALSE)$RNA
+  saveRDS(pbulk, file = file.path(outdir, "SeuratOBJs", paste0(prefix, "sample_aggregated.rds")))
+  
+  hoxpbulk = pbulk[HOXgenes, , drop = FALSE]
+  paralog = as.numeric(sub("^HOX[A-D]", "", rownames(hoxpbulk)))
+  tispost = colSums(hoxpbulk * paralog) / colSums(hoxpbulk)
+  
+  #Store relevant info
+  sampmeta = UM[[]] %>% dplyr::select(sample, tissue, individual) %>% distinct()
+  postdf = data.frame( #Save for future  interdevstage comparisons
+    sample = colnames(hoxpbulk),
+    devstage = devstage,
+    posteriority = tispost,
+    totalHOX = colSums(hoxpbulk),
+    detectedHOX = colSums(hoxpbulk > 0)
+  )
+  postdf = left_join(postdf, sampmeta, by = "sample")
+  saveRDS(postdf, file = file.path(outdir, "SeuratOBJs", paste0(prefix, "posteriority.rds")))
+  
+  #Define comparisons
+  samplepairs = list()
+  for(c in names(comparison)) {
+    
+    anterior = sampmeta %>% filter(tissue == comparison[[c]][1])
+    posterior = sampmeta %>% filter(tissue == comparison[[c]][2])
+    
+    if(devstage == "adult") {
+     pairs = inner_join(anterior, posterior, by = "individual", suffix = c(".ant", ".post"))
+    } else if(devstage == "embryo") {
+      pairs = cross_join(anterior, posterior, suffix = c(".ant", ".post"))
+    }
+   
+    pairs$comparison = c
+    samplepairs[[c]] = pairs
+     
+  }
+  samplepairs = bind_rows(samplepairs)
+  
+  #Calculate posteriority deltas
+  score = setNames(postdf$posteriority, postdf$sample)
+  deltapost = samplepairs
+  deltapost$p.ant = score[deltapost$sample.ant]
+  deltapost$p.post = score[deltapost$sample.post]
+  deltapost$delta = deltapost$p.post - deltapost$p.ant
+  deltapost$devstage = devstage
+  saveRDS(deltapost, file = file.path(outdir, "SeuratOBJs", paste0(prefix, "deltapost.rds"))) #Save for future  interdevstage comparisons
+  
+  #Plotting posteriority differences
+  monodeltaplot = ggplot(deltapost, aes(x = comparison, y = delta)) +
+    geom_hline(
+      yintercept = 0,
+      linetype = "dashed",
+      colour = "grey30"
+    ) +
+    geom_point(
+      aes(color = comparison),
+      position = position_jitter(width = 0.1, height = 0)
+    ) +
+    labs(
+      title = paste0("Weighted posteriority comparison for ", devstage),
+      y = "Posteriority score delta",
+      x = "Tissue type"
+    ) +
+    theme_bw()
+  
+  ggsave(file.path(plottingDir, paste0(prefix, "within_devstage_postdelta.pdf")), monodeltaplot, width = 6, height = 6)
+  
+  
+  
+  
+  ##Log2fc comparison
+  pbulkcpm = sweep(pbulk, MARGIN = 2, STATS = colSums(pbulk), FUN = "/") * 1e6 #Normalize to cpm
+  geneFC = list()
+  
+  for(i in seq_len(nrow(samplepairs))) {
+    
+    ant = samplepairs$sample.ant[i]
+    post = samplepairs$sample.post[i]
+    
+    geneFC[[i]] = data.frame(
+      gene = rownames(pbulkcpm),
+      sample.ant = ant,
+      sample.post = post,
+      comparison = samplepairs$comparison[i],
+      CPM.ant = pbulkcpm[, ant],
+      CPM.post = pbulkcpm[, post],
+      log2FC = log2((pbulkcpm[, post] + 1)/(pbulkcpm[, ant] + 1)),
+      row.names = NULL
+    )
+    
+  }
+  geneFC = bind_rows(geneFC)
+  geneFC$devstage = devstage
+  
+  #Specify genes of interest
+  spgFC = geneFC %>% filter(gene %in% spgs)
+  hoxFC = geneFC %>% filter(gene %in% HOXgenes)
+  
+  #hoxcpm = pbulkcpm[HOXgenes, , drop = FALSE]
 
 
 
@@ -778,23 +891,30 @@ plotfunc = function(devstage) {
 
 
   
-}
+#}
 
 
 
+#!#!#!#!#!#!#!#!#!#!#
+#TEMPORARY CODE TO RUN LOCALLY
+prefix = paste0("embryo", "_")
+seurat = file.path(outdir, "SeuratOBJs", paste0(prefix, "UM.rds"))
+markers = file.path(outdir, "SeuratOBJs", paste0(prefix, "markers.rds"))
+devstage = "embryo"
+#!#!#!#!#!#!#!#!#!#!#
 
 ###Run function for both the embryo and adult data
-for(i in c("embryo", "adult")) {
-  
-  prefix = paste0(i, "_")
-  seurat = file.path(outdir, "SeuratOBJs", paste0(prefix, "UM.rds"))
-  markers = file.path(outdir, "SeuratOBJs", paste0(prefix, "markers.rds"))
-  
-  if(file.exists(seurat) && file.exists(markers)) {
-    plotfunc(i)
-  }
-  
-}
+# for(i in c("embryo", "adult")) {
+#   
+#   prefix = paste0(i, "_")
+#   seurat = file.path(outdir, "SeuratOBJs", paste0(prefix, "UM.rds"))
+#   markers = file.path(outdir, "SeuratOBJs", paste0(prefix, "markers.rds"))
+#   
+#   if(file.exists(seurat) && file.exists(markers)) {
+#     plotfunc(i)
+#   }
+#   
+# }
 
 
 
